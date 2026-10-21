@@ -52,10 +52,54 @@
       <p class="counter"></p>
     </div>
     <script type="module">
-      import { TodoModel } from './TodoModel.js';
-      import { TodoView } from './TodoView.js';
-      import { TodoController } from './TodoController.js';
-      new TodoController(new TodoModel(), new TodoView(document.getElementById('app')));
+      import { TodoViewModel } from './TodoViewModel.js';
+    
+      const vm = new TodoViewModel();
+    
+      // 1. Récupération des éléments du DOM
+      const form = document.querySelector('form');
+      const input = document.querySelector('input');
+      const list = document.querySelector('ul');
+      const counter = document.querySelector('.counter');
+      const error = document.querySelector('.error');
+      const filters = document.querySelectorAll('[data-filtre]');
+    
+      // 2. COMMANDES : La vue transmet les actions au ViewModel
+      form.onsubmit = e => {
+        e.preventDefault();
+        vm.ajouter(input.value);
+        input.value = '';
+      };
+    
+      filters.forEach(btn => {
+        btn.onclick = () => vm.changerFiltre(btn.dataset.filtre);
+      });
+    
+      // 3. LIAISONS : La vue observe l'état du ViewModel et se met à jour
+      vm.erreur.subscribe(msg => (error.textContent = msg));
+      
+      vm.restantes.subscribe(n => (counter.textContent = `${n} tâche(s) à faire`));
+      
+      vm.filtre.subscribe(nom => {
+        filters.forEach(btn => {
+          if (btn.dataset.filtre === nom) btn.classList.add('actif');
+          else btn.classList.remove('actif');
+        });
+      });
+    
+      vm.visibles.subscribe(todos => {
+        list.innerHTML = '';
+        for (const t of todos) {
+          const li = document.createElement('li');
+          li.innerHTML = `<label><input type="checkbox" ${t.done ? 'checked' : ''}>
+            <span class="${t.done ? 'done' : ''}"></span></label> <button>✕</button>`;
+          li.querySelector('span').textContent = t.title;
+          
+          li.querySelector('input').onchange = () => vm.basculer(t.id);
+          li.querySelector('button').onclick = () => vm.supprimer(t.id);
+          list.append(li);
+        }
+      });
     </script>
   </body>
 </html>
